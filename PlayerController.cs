@@ -344,7 +344,7 @@ public class PlayerController : MonoBehaviour
         // }
     }
 
-        private void CalculateCollision() {
+    private void CalculateCollision() {
 
         // Collider[] colliders = Physics.OverlapSphere(transform.position + 0.5f * playerUp, 1f, worldObjectLayerMask);
         // if (colliders.Length > 0) {
@@ -385,6 +385,7 @@ public class PlayerController : MonoBehaviour
 
             Vector3 collisionNormal1 = Vector3.ProjectOnPlane(collisionContactPoints[0].point - transform.position, playerUp);
             Vector3 smallestProjectedForward = Vector3.ProjectOnPlane(playerForward, collisionNormal1);
+            Vector3 yesPoint = collisionContactPoints[0].point;
             collisionStop = Vector3.Project(playerForward, collisionNormal1);
 
             foreach (ContactPoint cPoint in collisionContactPoints) {
@@ -400,14 +401,99 @@ public class PlayerController : MonoBehaviour
                     collisionStop = Vector3.ProjectOnPlane(cPoint.normal, playerUp);
                     // collisionNormal = collisionNormal1;
                     collisionNormal = Vector3.ProjectOnPlane(cPoint.normal, playerUp);
+                    yesPoint = cPoint.point;
                 }
             }
 
             collisionForward = smallestProjectedForward;
-            Debug.DrawRay(transform.position, collisionForward, Color.green);
-            Debug.DrawRay(transform.position, collisionStop, Color.red);
+            // transform.position += collisionNormal * (1f - Vector3.Distance(transform.position, new Vector3(yesPoint.x, 0, yesPoint.z)));
+            Vector3 projected = Vector3.Project(yesPoint - (transform.position + (0.69f + 0.35f) * playerUp), collisionNormal);
+
+            Debug.DrawRay(transform.position + (0.69f + 0.35f) * playerUp, projected, Color.blue);
+
+            // if (Vector3.Dot(playerForward, projected) > 0) {
+            //     transform.position = previousPosition - 20 * Mathf.Abs(0.6f - projected.magnitude) * collisionNormal;
+            //     Debug.Log("first");
+            // }
+
+            // if (Vector3.Dot(playerForward, projected) < 0) {
+            //     transform.position = previousPosition + 20 * Mathf.Abs(0.6f - projected.magnitude) * collisionNormal;
+            //     Debug.Log("second");
+            // }
+
+            // Debug.Log(yesPoint);
+            
+            // Debug.DrawRay(transform.position, collisionForward, Color.green);
+            // Debug.DrawRay(transform.position, collisionStop, Color.red);
 
         } else collided = false;
+
+        /*
+        if (Vector3.Dot(playerForward, collisionNormal) < 0) {
+            
+            if (collisionContactPoints.Count >= 2) {
+
+                Collision other = externalColliderScript.collision;
+                Vector3 colliderPos = transform.position + (0.69f + 0.35f) * playerUp;
+
+                for (int i = 0; i < collisionContactPoints.Count - 1; i++) {
+                    Vector3 cPoint1 = collisionContactPoints[i].point;
+                    Vector3 cPoint2 = collisionContactPoints[i+1].point;
+
+                    // Vector3 cPoint1projected = Vector3.ProjectOnPlane(other.transform.position - cPoint1, playerUp);
+                    // Vector3 cPoint2projected = Vector3.ProjectOnPlane(other.transform.position - cPoint2, playerUp);
+
+                    Vector3[] colliderExtensions = new Vector3[8];
+                    colliderExtensions[0] = colliderPos + new Vector3(other.collider.bounds.extents.x, other.collider.bounds.extents.y, other.collider.bounds.extents.z);
+                    colliderExtensions[1] = colliderPos - new Vector3(other.collider.bounds.extents.x, other.collider.bounds.extents.y, -other.collider.bounds.extents.z);
+                    colliderExtensions[2] = colliderPos + new Vector3(other.collider.bounds.extents.x, -other.collider.bounds.extents.y, other.collider.bounds.extents.z);
+                    colliderExtensions[3] = colliderPos + new Vector3(other.collider.bounds.extents.x, -other.collider.bounds.extents.y, -other.collider.bounds.extents.z);
+                    colliderExtensions[4] = colliderPos + new Vector3(-other.collider.bounds.extents.x, other.collider.bounds.extents.y, other.collider.bounds.extents.z);
+                    colliderExtensions[5] = colliderPos + new Vector3(-other.collider.bounds.extents.x, other.collider.bounds.extents.y, -other.collider.bounds.extents.z);
+                    colliderExtensions[6] = colliderPos + new Vector3(-other.collider.bounds.extents.x, -other.collider.bounds.extents.y, other.collider.bounds.extents.z);
+                    colliderExtensions[7] = colliderPos + new Vector3(-other.collider.bounds.extents.x, -other.collider.bounds.extents.y, -other.collider.bounds.extents.z);
+
+                    bool cPoint1Trespasses = false;
+                    bool cPoint2Trespasses = false;
+
+                    float distance1;
+                    float distance2;
+                    float maxDistance1 = 0;
+                    float maxDistance2 = 0;
+
+                    // Debug.Log("Inside1"); // OK
+
+                    for (int j = 0; j < 8; j++) {
+                        distance1 = Vector3.Distance(Vector3.ProjectOnPlane(other.transform.position - colliderPos, playerUp), Vector3.ProjectOnPlane(cPoint1 - colliderPos, playerUp)) - Vector3.Distance(Vector3.ProjectOnPlane(other.transform.position - colliderPos, playerUp), Vector3.ProjectOnPlane(colliderExtensions[j] - colliderPos, playerUp));
+                        if (!cPoint1Trespasses && distance1 < 0) {
+                            cPoint1Trespasses = true;
+                            maxDistance1 = distance1;
+                            Debug.Log("Inside1.1");
+                        }
+
+                        distance2 = Vector3.Distance(Vector3.ProjectOnPlane(other.transform.position - colliderPos, playerUp), Vector3.ProjectOnPlane(cPoint2 - colliderPos, playerUp)) - Vector3.Distance(Vector3.ProjectOnPlane(other.transform.position - colliderPos, playerUp), Vector3.ProjectOnPlane(colliderExtensions[j] - colliderPos, playerUp));
+                        if (!cPoint2Trespasses && distance2 < 0) {
+                            cPoint1Trespasses = true;
+                            maxDistance2 = distance2;
+                            Debug.Log("Inside1.2");
+                        }
+
+                        if (cPoint1Trespasses || cPoint2Trespasses) {
+                            Debug.Log("Inside2: " + maxDistance1.ToString() + " " + maxDistance2.ToString());
+                            Debug.DrawRay(colliderPos - (0.69f + 0.35f) * playerUp, Vector3.ProjectOnPlane(-(cPoint1 + cPoint2 - 2 * colliderPos), playerUp), Color.cyan);
+                            if (maxDistance1 < maxDistance2)
+                                transform.position += maxDistance2 * Vector3.ProjectOnPlane(-(cPoint1 + cPoint2 - 2 * colliderPos), playerUp);
+                            else
+                                transform.position += maxDistance1 * Vector3.ProjectOnPlane(-(cPoint1 + cPoint2 - 2 * colliderPos), playerUp);
+                            
+                            break;
+                        }
+                    }
+                }
+            }
+
+        }
+        */
 
 
         // collided = Physics.Raycast(transform.position, playerForward, out hitInfoCollision, 0.65f, worldObjectLayerMask);
@@ -435,7 +521,7 @@ public class PlayerController : MonoBehaviour
             playerForward = Vector3.Cross(transform.right, hitInfoGround.normal).normalized;
         else
             // Smooth change when not grounded
-            playerForward = Vector3.Lerp(playerForward, transform.forward, 2 * groundRotationSpeed * Time.deltaTime);
+            playerForward = Vector3.Lerp(playerForward, transform.forward, 2 * groundRotationSpeed * Time.deltaTime).normalized;
     }
 
     // Calculate player's up vector
@@ -628,6 +714,9 @@ public class PlayerController : MonoBehaviour
                     // transform.position = previousPosition;
                     // groundVelocity = 0f;
                     // transform.position += -Vector3.Project(playerForward, collisionStop).normalized * velocityVector.magnitude;
+                    // if (Vector3.Dot(collisionNormal, playerForward) < -0.9)
+                    //     transform.position = previousPosition;
+                    // else
                     transform.position = previousPosition + Vector3.ProjectOnPlane(playerForward, collisionNormal) * CalculateVelocity() * Time.deltaTime;
                 }
 
